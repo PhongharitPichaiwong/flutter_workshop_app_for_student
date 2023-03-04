@@ -85,7 +85,7 @@ class _TrackingPageState extends State<TrackingPage>
         });
 
     return Scaffold(
-      body: Stack(children: []),
+      body: Stack(children: [googleMap]),
     );
   }
 
