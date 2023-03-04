@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mao/provider/cat.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -90,22 +89,133 @@ class PaddedElevatedButton extends StatelessWidget {
 
 late NotificationAppLaunchDetails notificationAppLaunchDetails;
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _configureLocalTimeZone();
 
-  runApp(MyApp());
+  notificationAppLaunchDetails = (!kIsWeb && Platform.isLinux
+      ? null
+      : await flutterLocalNotificationsPlugin
+          .getNotificationAppLaunchDetails())!;
+
+  if (notificationAppLaunchDetails?.didNotificationLaunchApp ?? false) {
+    selectedNotificationPayload =
+        notificationAppLaunchDetails!.notificationResponse?.payload;
+    initialRoute = OpenNotificationPage.routeName;
+  }
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('app_icon');
+
+  final List<DarwinNotificationCategory> darwinNotificationCategories =
+      <DarwinNotificationCategory>[
+    DarwinNotificationCategory(
+      darwinNotificationCategoryText,
+      actions: <DarwinNotificationAction>[
+        DarwinNotificationAction.text(
+          'text_1',
+          'Action 1',
+          buttonTitle: 'Send',
+          placeholder: 'Placeholder',
+        ),
+      ],
+    ),
+    DarwinNotificationCategory(
+      darwinNotificationCategoryPlain,
+      actions: <DarwinNotificationAction>[
+        DarwinNotificationAction.plain('id_1', 'Action 1'),
+        DarwinNotificationAction.plain(
+          'id_2',
+          'Action 2 (destructive)',
+          options: <DarwinNotificationActionOption>{
+            DarwinNotificationActionOption.destructive,
+          },
+        ),
+        DarwinNotificationAction.plain(
+          navigationActionId,
+          'Action 3 (foreground)',
+          options: <DarwinNotificationActionOption>{
+            DarwinNotificationActionOption.foreground,
+          },
+        ),
+        DarwinNotificationAction.plain(
+          'id_4',
+          'Action 4 (auth required)',
+          options: <DarwinNotificationActionOption>{
+            DarwinNotificationActionOption.authenticationRequired,
+          },
+        ),
+      ],
+      options: <DarwinNotificationCategoryOption>{
+        DarwinNotificationCategoryOption.hiddenPreviewShowTitle,
+      },
+    )
+  ];
+
+  /// Note: permissions aren't requested here just to demonstrate that can be
+  /// done later
+  final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
+    requestAlertPermission: false,
+    requestBadgePermission: false,
+    requestSoundPermission: false,
+    onDidReceiveLocalNotification:
+        (int id, String? title, String? body, String? payload) async {
+      didReceiveLocalNotificationStream.add(
+        ReceivedNotification(
+          id: id,
+          title: title,
+          body: body,
+          payload: payload,
+        ),
+      );
+    },
+    notificationCategories: darwinNotificationCategories,
+  );
+  final LinuxInitializationSettings initializationSettingsLinux =
+      LinuxInitializationSettings(
+    defaultActionName: 'Open notification',
+    defaultIcon: AssetsLinuxIcon('icons/app_icon.png'),
+  );
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsDarwin,
+    macOS: initializationSettingsDarwin,
+    linux: initializationSettingsLinux,
+  );
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse:
+        (NotificationResponse notificationResponse) {
+      switch (notificationResponse.notificationResponseType) {
+        case NotificationResponseType.selectedNotification:
+          selectNotificationStream.add(notificationResponse.payload);
+          break;
+        case NotificationResponseType.selectedNotificationAction:
+          if (notificationResponse.actionId == navigationActionId) {
+            selectNotificationStream.add(notificationResponse.payload);
+          }
+          break;
+      }
+    },
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+  );
+
+  runApp(MyApp(
+    notificationAppLaunchDetails: notificationAppLaunchDetails!,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({
-    Key? key,
-  }) : super(key: key);
+  final NotificationAppLaunchDetails notificationAppLaunchDetails;
+
+  const MyApp({Key? key, required this.notificationAppLaunchDetails})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => CatProvider()),
         ChangeNotifierProvider(create: (context) => ScreenIndexProvider()),
         ChangeNotifierProvider(
           create: (context) => UserProvider(),
@@ -123,7 +233,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         home: HomeScreen(
-          value: 100,
+          notificationAppLaunchDetails: notificationAppLaunchDetails,
         ),
       ),
     );
