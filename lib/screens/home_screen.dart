@@ -9,9 +9,8 @@ import 'provider_sample_page.dart';
 import 'traking_page.dart';
 
 class HomeScreen extends StatelessWidget {
-  HomeScreen({
-    super.key,
-  });
+  int value;
+  HomeScreen({super.key, required this.value});
 
   final List<dynamic> screens = [
     const ProviderSamplePage(),
@@ -23,9 +22,55 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('value: ${value}');
     final _screenindexprovider = Provider.of<ScreenIndexProvider>(context);
     int currentScreenIndex = _screenindexprovider.fetchCurrentScreenIndex;
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Demo'),
+        centerTitle: true,
+        elevation: 4,
+        shadowColor: Theme.of(context).shadowColor,
+        backgroundColor: Colors.blue,
+        leading: IconButton(
+          icon: Icon(
+            Icons.settings,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            // do something
+          },
+        ),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.settings,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              // do something
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.settings,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              // do something
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.settings,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              // do something
+            },
+          )
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         showSelectedLabels: false,

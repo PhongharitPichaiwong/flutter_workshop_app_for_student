@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mao/provider/cat.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -89,7 +90,7 @@ class PaddedElevatedButton extends StatelessWidget {
 
 late NotificationAppLaunchDetails notificationAppLaunchDetails;
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(MyApp());
@@ -104,6 +105,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (context) => CatProvider()),
         ChangeNotifierProvider(create: (context) => ScreenIndexProvider()),
         ChangeNotifierProvider(
           create: (context) => UserProvider(),
@@ -120,7 +122,9 @@ class MyApp extends StatelessWidget {
             elevation: 0,
           ),
         ),
-        home: HomeScreen(),
+        home: HomeScreen(
+          value: 100,
+        ),
       ),
     );
   }
